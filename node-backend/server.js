@@ -13,9 +13,14 @@ dotenv.config();
 const app = express();
 
 app.use(express.json());
-app.use(cors({ origin: "http://localhost:3000", credentials: true }));
 
-// Express Session
+// ✅ Allow both local and deployed frontend for CORS
+app.use(cors({ 
+  origin: ["http://localhost:3000", "https://polite-lollipop-d55e02.netlify.app"], 
+  credentials: true 
+}));
+
+// ✅ Express Session
 app.use(session({
   secret: process.env.SESSION_SECRET || "your_secret_key",
   resave: false,
@@ -25,11 +30,11 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Google OAuth Strategy
+// ✅ Google OAuth Strategy
 passport.use(new GoogleStrategy({
   clientID: process.env.CLIENT_ID,
   clientSecret: process.env.CLIENT_SECRET,
-  callbackURL: "https://letter-editor.onrender.com/auth/google/callback",
+  callbackURL: "https://letter-editor.onrender.com/auth/google/callback", // Ensure this matches Google Cloud settings
 }, (accessToken, refreshToken, profile, done) => {
   profile.accessToken = accessToken;
   return done(null, profile);
@@ -38,18 +43,18 @@ passport.use(new GoogleStrategy({
 passport.serializeUser((user, done) => done(null, user));
 passport.deserializeUser((obj, done) => done(null, obj));
 
-// Google Signup/Login Route
+// ✅ Google Signup/Login Route
 app.get("/auth/google", passport.authenticate("google", { scope: ["profile", "email", "https://www.googleapis.com/auth/drive.file"] }));
 
-// Google Callback Route
+// ✅ Google Callback Route
 app.get("/auth/google/callback",
   passport.authenticate("google", {
-    successRedirect: "http://localhost:3000/dashboard",
-    failureRedirect: "http://localhost:3000/login",
+    successRedirect: "https://polite-lollipop-d55e02.netlify.app/dashboard",
+    failureRedirect: "https://polite-lollipop-d55e02.netlify.app/login",
   })
 );
 
-// Get Authenticated User
+// ✅ Get Authenticated User
 app.get("/auth/user", (req, res) => {
   if (req.isAuthenticated()) {
     res.json(req.user);
@@ -58,20 +63,20 @@ app.get("/auth/user", (req, res) => {
   }
 });
 
-// Logout Route
+// ✅ Logout Route (redirect to deployed frontend)
 app.get("/auth/logout", (req, res) => {
   req.logout(() => {
-    res.redirect("http://localhost:3000");
+    res.redirect("https://polite-lollipop-d55e02.netlify.app");
   });
 });
 
-// Ensure Local Save Directory Exists
+// ✅ Ensure Local Save Directory Exists
 const SAVE_DIRECTORY = path.join(__dirname, "saved_letters");
 if (!fs.existsSync(SAVE_DIRECTORY)) {
   fs.mkdirSync(SAVE_DIRECTORY);
 }
 
-// Save Letter & Upload to Google Drive
+// ✅ Save Letter & Upload to Google Drive
 app.post("/save-letter", async (req, res) => {
   if (!req.isAuthenticated()) {
     return res.status(401).json({ message: "Unauthorized" });
@@ -82,12 +87,12 @@ app.post("/save-letter", async (req, res) => {
     return res.status(400).json({ message: "Content is required" });
   }
 
-  // Remove HTML tags before saving
+  // ✅ Remove all unnecessary HTML tags before saving
   const plainTextContent = content
-  .replace(/<\/?[^>]+(>|$)/g, '')  // Remove all HTML tags
-  .replace(/&nbsp;/g, ' ')         // Replace non-breaking spaces
-  .replace(/\s+/g, ' ')            // Remove extra whitespace
-  .trim();
+    .replace(/<\/?[^>]+(>|$)/g, '')  // Remove all HTML tags
+    .replace(/&nbsp;/g, ' ')         // Replace non-breaking spaces
+    .replace(/\s+/g, ' ')            // Remove extra whitespace
+    .trim();
 
   const uniqueFilename = `letter_${Date.now()}_${uuidv4()}.txt`;
   const filePath = path.join(SAVE_DIRECTORY, uniqueFilename);
@@ -108,14 +113,14 @@ app.post("/save-letter", async (req, res) => {
   });
 });
 
-// Upload File to Google Drive (Creates Folder If Missing)
+// ✅ Upload File to Google Drive (Creates Folder If Missing)
 async function uploadToGoogleDrive(accessToken, filePath, filename) {
   const auth = new google.auth.OAuth2();
   auth.setCredentials({ access_token: accessToken });
 
   const drive = google.drive({ version: "v3", auth });
 
-  // Check if "Saved Letters" folder exists, otherwise create it
+  // ✅ Check if "Saved Letters" folder exists, otherwise create it
   let folderId = await getOrCreateFolder(drive, "Saved Letters");
 
   const fileMetadata = {
@@ -137,7 +142,7 @@ async function uploadToGoogleDrive(accessToken, filePath, filename) {
   return response.data.webViewLink;
 }
 
-// Get or Create Folder in Google Drive
+// ✅ Get or Create Folder in Google Drive
 async function getOrCreateFolder(drive, folderName) {
   const response = await drive.files.list({
     q: `name='${folderName}' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
@@ -161,9 +166,8 @@ async function getOrCreateFolder(drive, folderName) {
   }
 }
 
-// Start Server
+// ✅ Start Server on Render
 app.listen(5000, () => {
-  console.log("Server running on http://localhost:5000");
+  console.log("Server running on https://letter-editor.onrender.com");
 });
-
 
