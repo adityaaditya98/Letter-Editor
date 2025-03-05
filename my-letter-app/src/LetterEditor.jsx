@@ -31,7 +31,7 @@ const LetterEditor = () => {
   
     const content = editor.getHTML();
     
-    const response = await fetch("http://localhost:5000/save-letter", {
+    const response = await fetch("https://letter-editor.onrender.com/save-letter", {
       method: "POST",
       credentials: "include", // Important for session cookies
       headers: {
