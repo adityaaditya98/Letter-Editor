@@ -29,7 +29,7 @@ app.use(passport.session());
 passport.use(new GoogleStrategy({
   clientID: process.env.CLIENT_ID,
   clientSecret: process.env.CLIENT_SECRET,
-  callbackURL: "http://localhost:5000/auth/google/callback",
+  callbackURL: "https://letter-editor.onrender.com/auth/google/callback",
 }, (accessToken, refreshToken, profile, done) => {
   profile.accessToken = accessToken;
   return done(null, profile);
